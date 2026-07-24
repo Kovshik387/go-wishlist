@@ -34,12 +34,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function authenticate() {
       try {
         let current: User;
-        try {
-          current = await api.me();
-        } catch {
-          if (telegram?.initData) {
+        if (telegram?.initData) {
+          try {
             current = (await api.telegramAuth(telegram.initData)).user;
-          } else {
+          } catch {
+            current = await api.me();
+          }
+        } else {
+          try {
+            current = await api.me();
+          } catch {
             current = (await api.devAuth()).user;
           }
         }

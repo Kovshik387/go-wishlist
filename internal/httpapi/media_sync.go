@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -109,6 +110,42 @@ func (s *Server) cacheRemoteImage(ctx context.Context, ownerID, rawURL, referer 
 		return "", err
 	}
 	return s.persistImage(ctx, ownerID, asset)
+}
+
+func (s *Server) cacheTelegramAvatar(ctx context.Context, ownerID, rawURL string) (string, error) {
+	asset, err := s.Images.Fetch(ctx, rawURL, "")
+	if err != nil {
+		return "", err
+	}
+	targetDir := filepath.Join(s.Config.MediaDir, ownerID, "avatar")
+	if err = os.MkdirAll(targetDir, 0o750); err != nil {
+		return "", err
+	}
+	filename := "current" + asset.Extension
+	target := filepath.Join(targetDir, filename)
+	output, err := os.CreateTemp(targetDir, ".avatar-*")
+	if err != nil {
+		return "", err
+	}
+	temporaryPath := output.Name()
+	defer os.Remove(temporaryPath)
+	if err = output.Chmod(0o640); err != nil {
+		_ = output.Close()
+		return "", err
+	}
+	if _, err = io.Copy(output, bytes.NewReader(asset.Body)); err != nil {
+		_ = output.Close()
+		return "", err
+	}
+	if err = output.Close(); err != nil {
+		return "", err
+	}
+	if err = os.Rename(temporaryPath, target); err != nil {
+		return "", err
+	}
+	relativePath := filepath.Join(ownerID, "avatar", filename)
+	return "/media/" + filepath.ToSlash(relativePath) + "?v=" +
+		strconv.FormatInt(time.Now().Unix(), 10), nil
 }
 
 func (s *Server) persistImage(ctx context.Context, ownerID string, asset imagecache.Asset) (string, error) {

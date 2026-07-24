@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -30,11 +31,29 @@ func (s *Server) telegramAuth(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, code, message)
 		return
 	}
-	user, err := s.Store.UpsertTelegramUser(r.Context(), authData.User)
+	telegramUser := authData.User
+	remoteAvatarURL := telegramUser.PhotoURL
+	telegramUser.PhotoURL = ""
+	user, err := s.Store.UpsertTelegramUser(r.Context(), telegramUser)
 	if err != nil {
 		s.Logger.Error("upsert authenticated user", "error", err)
 		writeStoreError(w, err)
 		return
+	}
+	if remoteAvatarURL == "" && isRemoteImageURL(user.AvatarURL) {
+		remoteAvatarURL = user.AvatarURL
+	}
+	if remoteAvatarURL != "" {
+		avatarContext, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		localAvatarURL, avatarErr := s.cacheTelegramAvatar(avatarContext, user.ID, remoteAvatarURL)
+		cancel()
+		if avatarErr != nil {
+			s.Logger.Warn("cache telegram avatar", "user_id", user.ID, "error", avatarErr)
+		} else if avatarErr = s.Store.UpdateUserAvatar(r.Context(), user.ID, localAvatarURL); avatarErr != nil {
+			s.Logger.Warn("save telegram avatar", "user_id", user.ID, "error", avatarErr)
+		} else {
+			user.AvatarURL = localAvatarURL
+		}
 	}
 	s.issueSession(w, r, user)
 }

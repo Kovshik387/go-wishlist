@@ -22,7 +22,13 @@ export function ProfilePage() {
   });
   const openBot = () => {
     const url = `https://t.me/${config.data?.botUsername ?? ""}?start=notifications`;
-    telegram?.openTelegramLink(url) ?? window.open(url, "_blank");
+    if (telegram) telegram.openTelegramLink(url);
+    else window.open(url, "_blank", "noopener");
+  };
+  const openBugReport = () => {
+    const url = "https://t.me/yrulewet";
+    if (telegram) telegram.openTelegramLink(url);
+    else window.open(url, "_blank", "noopener");
   };
   return (
     <div className="page">
@@ -48,6 +54,7 @@ export function ProfilePage() {
         <Link to="/settings"><span className="menu-card__icon"><Icon name="bell" /></span><span><strong>Уведомления</strong><small>События и тихие часы</small></span><Icon name="arrow" /></Link>
         <button onClick={openBot}><span className="menu-card__icon"><Icon name="external" /></span><span><strong>Открыть бота</strong><small>Включить сообщения через /start</small></span><Icon name="arrow" /></button>
         <Link to="/lists"><span className="menu-card__icon"><Icon name="lock" /></span><span><strong>Приватность списков</strong><small>Настраивается для каждого списка</small></span><Icon name="arrow" /></Link>
+        <button onClick={openBugReport}><span className="menu-card__icon"><Icon name="external" /></span><span><strong>Нашли баг?</strong><small>Напишите @yrulewet</small></span><Icon name="arrow" /></button>
       </section>
       <button className="button button--text button--wide" disabled={logout.isPending} onClick={() => logout.mutate()}>
         Выйти из аккаунта

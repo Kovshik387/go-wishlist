@@ -51,6 +51,14 @@ func (s *Store) UserByID(ctx context.Context, id string) (User, error) {
 	return scanUser(s.DB.QueryRowContext(ctx, userSelect+` WHERE deleted_at IS NULL AND id = ?`, id))
 }
 
+func (s *Store) UpdateUserAvatar(ctx context.Context, id, avatarURL string) error {
+	_, err := s.DB.ExecContext(ctx, `
+		UPDATE users SET avatar_url = ?, updated_at = ?
+		WHERE id = ? AND deleted_at IS NULL`,
+		avatarURL, nowUTC(), id)
+	return err
+}
+
 func (s *Store) PublicUserByID(ctx context.Context, id, viewerID string) (User, bool, error) {
 	user, err := s.UserByID(ctx, id)
 	if err != nil {
