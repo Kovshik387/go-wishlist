@@ -18,6 +18,13 @@ func (s *Server) createWish(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+	if cachedURL, err := s.cacheRemoteImage(
+		r.Context(), user.ID, input.ImageURL, input.ProductURL,
+	); err != nil {
+		s.Logger.Warn("cache new wish image", "user_id", user.ID, "error", err)
+	} else {
+		input.ImageURL = cachedURL
+	}
 	wish, err := s.Store.CreateWish(r.Context(), user.ID, chi.URLParam(r, "id"),
 		input, s.Config.NotificationDigest)
 	if err != nil {
@@ -46,6 +53,13 @@ func (s *Server) updateWish(w http.ResponseWriter, r *http.Request) {
 	var input store.WishInput
 	if !decodeJSON(w, r, &input) {
 		return
+	}
+	if cachedURL, err := s.cacheRemoteImage(
+		r.Context(), user.ID, input.ImageURL, input.ProductURL,
+	); err != nil {
+		s.Logger.Warn("cache updated wish image", "user_id", user.ID, "error", err)
+	} else {
+		input.ImageURL = cachedURL
 	}
 	wish, err := s.Store.UpdateWish(r.Context(), chi.URLParam(r, "wishID"), user.ID, input)
 	if err != nil {

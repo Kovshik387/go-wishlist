@@ -31,13 +31,13 @@ func TestValidateURLBlocksInternalNetworks(t *testing.T) {
 	}
 	for _, host := range []string{"loopback.example", "private.example", "metadata.example", "mixed.example"} {
 		t.Run(host, func(t *testing.T) {
-			_, err := validateURL(context.Background(), resolver, "https://"+host+"/product")
+			_, err := ValidatePublicURL(context.Background(), resolver, "https://"+host+"/product")
 			if !errors.Is(err, ErrUnsafeURL) {
 				t.Fatalf("error = %v, want ErrUnsafeURL", err)
 			}
 		})
 	}
-	if _, err := validateURL(context.Background(), resolver, "https://public.example/product"); err != nil {
+	if _, err := ValidatePublicURL(context.Background(), resolver, "https://public.example/product"); err != nil {
 		t.Fatalf("public URL rejected: %v", err)
 	}
 }

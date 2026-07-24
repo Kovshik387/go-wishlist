@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api, APIError } from "./lib/api";
 import { telegram } from "./lib/telegram";
 import type { User } from "./types";
@@ -24,6 +25,7 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState("");
 
@@ -41,7 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             current = (await api.devAuth()).user;
           }
         }
-        if (active) setUser(current);
+        if (active) {
+          setUser(current);
+          void api.syncMedia()
+            .then((result) => {
+              if (active && result.synced > 0) void queryClient.invalidateQueries();
+            })
+            .catch(() => undefined);
+        }
       } catch (caught) {
         if (!active) return;
         if (caught instanceof APIError && caught.status === 404 && !telegram) {
@@ -55,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [queryClient]);
 
   const context = useMemo(() => (user ? { user, setUser } : null), [user]);
   if (error) {

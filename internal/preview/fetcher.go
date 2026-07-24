@@ -45,7 +45,7 @@ func (f Fetcher) Fetch(ctx context.Context, rawURL string) (Result, error) {
 	if resolver == nil {
 		resolver = net.DefaultResolver
 	}
-	parsed, err := validateURL(ctx, resolver, rawURL)
+	parsed, err := ValidatePublicURL(ctx, resolver, rawURL)
 	if err != nil {
 		return Result{}, err
 	}
@@ -57,43 +57,8 @@ func (f Fetcher) Fetch(ctx context.Context, rawURL string) (Result, error) {
 	if maxBytes <= 0 {
 		maxBytes = 2 << 20
 	}
-	dialer := &net.Dialer{Timeout: 4 * time.Second, KeepAlive: 15 * time.Second}
-	transport := &http.Transport{
-		Proxy:                 nil,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          10,
-		IdleConnTimeout:       30 * time.Second,
-		TLSHandshakeTimeout:   4 * time.Second,
-		ResponseHeaderTimeout: 5 * time.Second,
-		DialContext: func(dialCtx context.Context, network, address string) (net.Conn, error) {
-			host, port, err := net.SplitHostPort(address)
-			if err != nil {
-				return nil, err
-			}
-			addresses, err := resolver.LookupIPAddr(dialCtx, host)
-			if err != nil {
-				return nil, err
-			}
-			for _, candidate := range addresses {
-				if IsPublicIP(candidate.IP) {
-					return dialer.DialContext(dialCtx, network, net.JoinHostPort(candidate.IP.String(), port))
-				}
-			}
-			return nil, ErrUnsafeURL
-		},
-	}
-	defer transport.CloseIdleConnections()
-	client := &http.Client{
-		Transport: transport,
-		Timeout:   timeout,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 3 {
-				return errors.New("too many redirects")
-			}
-			_, err := validateURL(req.Context(), resolver, req.URL.String())
-			return err
-		},
-	}
+	client, closeClient := NewSafeHTTPClient(resolver, timeout, 3)
+	defer closeClient()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsed.String(), nil)
 	if err != nil {
 		return Result{}, err
@@ -129,7 +94,7 @@ func (f Fetcher) Fetch(ctx context.Context, rawURL string) (Result, error) {
 	return result, nil
 }
 
-func validateURL(ctx context.Context, resolver Resolver, rawURL string) (*url.URL, error) {
+func ValidatePublicURL(ctx context.Context, resolver Resolver, rawURL string) (*url.URL, error) {
 	parsed, err := url.Parse(strings.TrimSpace(rawURL))
 	if err != nil || parsed.Hostname() == "" {
 		return nil, errors.New("invalid URL")
@@ -157,6 +122,55 @@ func validateURL(ctx context.Context, resolver Resolver, rawURL string) (*url.UR
 		}
 	}
 	return parsed, nil
+}
+
+func NewSafeHTTPClient(resolver Resolver, timeout time.Duration, maxRedirects int) (*http.Client, func()) {
+	if resolver == nil {
+		resolver = net.DefaultResolver
+	}
+	if timeout <= 0 {
+		timeout = 8 * time.Second
+	}
+	if maxRedirects <= 0 {
+		maxRedirects = 3
+	}
+	dialer := &net.Dialer{Timeout: 4 * time.Second, KeepAlive: 15 * time.Second}
+	transport := &http.Transport{
+		Proxy:                 nil,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          10,
+		IdleConnTimeout:       30 * time.Second,
+		TLSHandshakeTimeout:   4 * time.Second,
+		ResponseHeaderTimeout: 5 * time.Second,
+		DialContext: func(dialCtx context.Context, network, address string) (net.Conn, error) {
+			host, port, err := net.SplitHostPort(address)
+			if err != nil {
+				return nil, err
+			}
+			addresses, err := resolver.LookupIPAddr(dialCtx, host)
+			if err != nil {
+				return nil, err
+			}
+			for _, candidate := range addresses {
+				if IsPublicIP(candidate.IP) {
+					return dialer.DialContext(dialCtx, network, net.JoinHostPort(candidate.IP.String(), port))
+				}
+			}
+			return nil, ErrUnsafeURL
+		},
+	}
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   timeout,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= maxRedirects {
+				return errors.New("too many redirects")
+			}
+			_, err := ValidatePublicURL(req.Context(), resolver, req.URL.String())
+			return err
+		},
+	}
+	return client, transport.CloseIdleConnections
 }
 
 var blockedPrefixes = []netip.Prefix{
@@ -236,10 +250,10 @@ func parseHTML(body []byte, base *url.URL) (Result, error) {
 	}
 	visit(root)
 	result := Result{
-		Title: first(meta["og:title"], meta["twitter:title"], pageTitle),
+		Title:       first(meta["og:title"], meta["twitter:title"], pageTitle),
 		Description: first(meta["og:description"], meta["description"], meta["twitter:description"]),
-		ImageURL: first(meta["og:image:secure_url"], meta["og:image"], meta["twitter:image"]),
-		Currency: strings.ToUpper(first(meta["product:price:currency"], meta["og:price:currency"], "RUB")),
+		ImageURL:    first(meta["og:image:secure_url"], meta["og:image"], meta["twitter:image"]),
+		Currency:    strings.ToUpper(first(meta["product:price:currency"], meta["og:price:currency"], "RUB")),
 	}
 	if result.ImageURL != "" {
 		if imageURL, err := base.Parse(result.ImageURL); err == nil &&

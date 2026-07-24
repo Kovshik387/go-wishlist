@@ -159,4 +159,9 @@ export const api = {
     body.set("file", file);
     return request<{ publicUrl: string }>("/api/v1/media", { method: "POST", body });
   },
+  syncMedia: () =>
+    request<{ attempted: number; synced: number; failed: number }>(
+      "/api/v1/media/sync",
+      json("POST"),
+    ),
 };

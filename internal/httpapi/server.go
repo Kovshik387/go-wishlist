@@ -15,6 +15,7 @@ import (
 	"github.com/example/wishtrack/internal/auth"
 	"github.com/example/wishtrack/internal/bot"
 	"github.com/example/wishtrack/internal/config"
+	"github.com/example/wishtrack/internal/imagecache"
 	"github.com/example/wishtrack/internal/preview"
 	"github.com/example/wishtrack/internal/store"
 	"github.com/go-chi/chi/v5"
@@ -27,6 +28,7 @@ type Server struct {
 	Tokens   auth.TokenManager
 	Telegram auth.TelegramValidator
 	Preview  preview.Fetcher
+	Images   imagecache.Fetcher
 	Bot      *bot.Client
 	Logger   *slog.Logger
 	Limiter  *limiter
@@ -35,15 +37,16 @@ type Server struct {
 func New(cfg config.Config, db *sql.DB, dataStore *store.Store, logger *slog.Logger) *Server {
 	return &Server{
 		Config: cfg,
-		DB: db,
-		Store: dataStore,
+		DB:     db,
+		Store:  dataStore,
 		Tokens: auth.TokenManager{Secret: []byte(cfg.AccessTokenSecret), TTL: cfg.AccessTokenTTL},
 		Telegram: auth.TelegramValidator{
 			BotToken: cfg.TelegramBotToken, MaxAge: cfg.TelegramAuthMaxAge,
 		},
 		Preview: preview.Fetcher{},
-		Bot: &bot.Client{Token: cfg.TelegramBotToken},
-		Logger: logger,
+		Images:  imagecache.Fetcher{},
+		Bot:     &bot.Client{Token: cfg.TelegramBotToken},
+		Logger:  logger,
 		Limiter: newLimiter(180, time.Minute),
 	}
 }
@@ -91,6 +94,7 @@ func (s *Server) Handler() http.Handler {
 		api.Get("/api/v1/notification-settings", s.notificationSettings)
 		api.Patch("/api/v1/notification-settings", s.updateNotificationSettings)
 		api.Post("/api/v1/media", s.uploadMedia)
+		api.Post("/api/v1/media/sync", s.syncMedia)
 	})
 
 	if err := os.MkdirAll(s.Config.MediaDir, 0o750); err == nil {
@@ -123,7 +127,7 @@ func (s *Server) brandConfig(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{
 		"name": s.Config.BrandName, "emoji": s.Config.BrandEmoji,
 		"primary": s.Config.BrandPrimary, "accent": s.Config.BrandAccent,
-		"botUsername": s.Config.TelegramBotUsername,
+		"botUsername":  s.Config.TelegramBotUsername,
 		"appShortName": s.Config.TelegramAppShortName,
 	})
 }
