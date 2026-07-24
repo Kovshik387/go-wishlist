@@ -1275,6 +1275,21 @@ summary:focus-visible {
   gap: 5px;
 }
 
+.image-uploader--cover {
+  padding: 2px 0 4px;
+}
+
+.image-uploader--cover > button {
+  width: 158px;
+  min-width: 158px;
+  height: 104px;
+  border-radius: 14px;
+}
+
+.image-uploader--cover .image-uploader__controls .button {
+  width: fit-content;
+}
+
 .profile-card {
   display: flex;
   align-items: center;

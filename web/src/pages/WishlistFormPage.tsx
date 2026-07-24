@@ -1,9 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
+import { Icon } from "../components/Icon";
 import { PageHeader } from "../components/PageHeader";
 import { PageLoading } from "../components/States";
 import { api, APIError } from "../lib/api";
@@ -39,6 +40,7 @@ export function WishlistFormPage() {
   const editing = Boolean(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
   const query = useQuery({
     queryKey: ["wishlist", id],
     queryFn: () => api.wishlist(id!),
@@ -70,6 +72,10 @@ export function WishlistFormPage() {
       navigate(`/lists/${list.id}`, { replace: true });
     },
   });
+  const uploadMutation = useMutation({
+    mutationFn: api.upload,
+    onSuccess: (media) => form.setValue("coverUrl", media.publicUrl, { shouldDirty: true, shouldValidate: true }),
+  });
   const deleteMutation = useMutation({
     mutationFn: () => api.deleteWishlist(id!),
     onSuccess: async () => {
@@ -78,6 +84,8 @@ export function WishlistFormPage() {
     },
   });
   if (editing && query.isPending) return <div className="page"><PageLoading cards={1} /></div>;
+  const coverUrl = form.watch("coverUrl");
+  const coverPreview = coverUrl.startsWith("/") || /^https?:\/\//.test(coverUrl) ? coverUrl : "";
   return (
     <div className="page page--form">
       <PageHeader
@@ -97,6 +105,43 @@ export function WishlistFormPage() {
           <textarea aria-label="Коротко о списке" placeholder="Подсказка для друзей" rows={3} {...form.register("description")} />
           <FieldError message={form.formState.errors.description?.message} />
         </label>
+        <div className="image-uploader image-uploader--cover">
+          <button
+            type="button"
+            aria-label={coverPreview ? "Заменить фотографию списка" : "Добавить фотографию списка"}
+            disabled={uploadMutation.isPending}
+            onClick={() => fileRef.current?.click()}
+          >
+            {coverPreview
+              ? <img src={coverPreview} alt="Обложка списка" referrerPolicy="no-referrer" />
+              : <span><Icon name="plus" size={24} /><small>Фото списка</small></span>}
+          </button>
+          <input
+            ref={fileRef}
+            hidden
+            type="file"
+            aria-label="Фотография списка"
+            accept="image/*"
+            onChange={(event) => event.target.files?.[0] && uploadMutation.mutate(event.target.files[0])}
+          />
+          <div className="image-uploader__controls">
+            <p>{uploadMutation.isPending ? "Загружаем фотографию…" : "JPEG, PNG, WebP, GIF или AVIF, до 6 МБ"}</p>
+            {coverPreview && (
+              <button
+                type="button"
+                className="button button--soft button--small"
+                onClick={() => form.setValue("coverUrl", "", { shouldDirty: true })}
+              >
+                Убрать фотографию
+              </button>
+            )}
+            {uploadMutation.isError && (
+              <p className="form-error" role="alert">
+                {uploadMutation.error instanceof APIError ? uploadMutation.error.message : "Не удалось загрузить фотографию"}
+              </p>
+            )}
+          </div>
+        </div>
         <div className="field-row">
           <label className="field">
             <span>Повод</span>
@@ -136,7 +181,7 @@ export function WishlistFormPage() {
         {mutation.isError && (
           <p className="form-error">{mutation.error instanceof APIError ? mutation.error.message : "Не удалось сохранить список"}</p>
         )}
-        <button className="button button--primary button--wide" disabled={mutation.isPending}>
+        <button className="button button--primary button--wide" disabled={mutation.isPending || uploadMutation.isPending}>
           {mutation.isPending ? "Сохраняем…" : editing ? "Сохранить изменения" : "Создать список"}
         </button>
         {editing && (
