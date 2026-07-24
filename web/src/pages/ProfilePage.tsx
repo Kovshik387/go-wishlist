@@ -49,10 +49,6 @@ export function ProfilePage() {
         <button onClick={openBot}><span className="menu-card__icon"><Icon name="external" /></span><span><strong>Открыть бота</strong><small>Включить сообщения через /start</small></span><Icon name="arrow" /></button>
         <Link to="/lists"><span className="menu-card__icon"><Icon name="lock" /></span><span><strong>Приватность списков</strong><small>Настраивается для каждого списка</small></span><Icon name="arrow" /></Link>
       </section>
-      <section className="profile-note">
-        <span><Icon name="lock" size={21} /></span>
-        <div><strong>Небольшой круг — это прекрасно</strong><p>WishTrack хранит данные на вашем сервере и ничего не продаёт рекламным сетям.</p></div>
-      </section>
       <button className="button button--text button--wide" disabled={logout.isPending} onClick={() => logout.mutate()}>
         Выйти из аккаунта
       </button>

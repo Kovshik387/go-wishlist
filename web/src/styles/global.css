@@ -1016,10 +1016,6 @@ summary:focus-visible {
   gap: 12px;
 }
 
-.field-row--price {
-  grid-template-columns: minmax(0, 1fr) 94px 82px;
-}
-
 .field-error,
 .form-error {
   color: var(--danger);
@@ -1082,10 +1078,6 @@ summary:focus-visible {
   border-color: color-mix(in srgb, var(--primary) 42%, transparent);
   background: var(--primary-soft);
   color: var(--primary);
-}
-
-.segmented-field--two {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .settings-group,
@@ -1233,23 +1225,15 @@ summary:focus-visible {
   margin: 0;
 }
 
-.optional-fields {
-  border: 1px solid var(--border);
-  border-radius: 15px;
-  background: var(--surface);
-}
-
-.optional-fields summary {
-  padding: 15px;
-  cursor: pointer;
-  font-size: 0.84rem;
-  font-weight: 800;
-}
-
-.optional-fields[open] {
+.image-uploader__controls {
   display: grid;
-  padding: 0 14px 14px;
-  gap: 13px;
+  min-width: 0;
+  flex: 1;
+  gap: 8px;
+}
+
+.image-uploader__controls .field {
+  gap: 5px;
 }
 
 .profile-card {
@@ -1359,26 +1343,6 @@ summary:focus-visible {
   margin-top: 3px;
   color: var(--muted);
   font-size: 0.7rem;
-}
-
-.profile-note {
-  display: flex;
-  margin-bottom: 13px;
-  padding: 17px;
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--success) 8%, var(--surface));
-  gap: 12px;
-}
-
-.profile-note > span {
-  font-size: 1.45rem;
-}
-
-.profile-note p {
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
 }
 
 .profile-form {
@@ -1742,15 +1706,6 @@ summary:focus-visible {
   .form-card {
     padding: 17px 14px;
   }
-
-  .field-row--price {
-    grid-template-columns: minmax(0, 1fr) 86px;
-  }
-
-  .field--quantity {
-    grid-column: 1 / -1;
-  }
-
 
   .profile-card {
     padding: 17px 14px;
