@@ -1,0 +1,15 @@
+DROP TABLE IF EXISTS media_objects;
+DROP TABLE IF EXISTS processed_telegram_updates;
+DROP TABLE IF EXISTS notification_deliveries;
+DROP TABLE IF EXISTS outbox_events;
+DROP TABLE IF EXISTS activity_events;
+DROP TABLE IF EXISTS notification_preferences;
+DROP TABLE IF EXISTS reservations;
+DROP TABLE IF EXISTS follow_notification_settings;
+DROP TABLE IF EXISTS follows;
+DROP TABLE IF EXISTS wishes;
+DROP TABLE IF EXISTS wishlist_access;
+DROP TABLE IF EXISTS wishlists;
+DROP TABLE IF EXISTS user_sessions;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS schema_migrations;

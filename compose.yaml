@@ -1,0 +1,55 @@
+name: wishtrack
+
+x-app-environment: &app-environment
+  APP_ENV: ${APP_ENV:-development}
+  PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
+  FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8080}
+  ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-local-development-secret-at-least-32-chars}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+  TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-wishtrack_bot}
+  TELEGRAM_APP_SHORT_NAME: ${TELEGRAM_APP_SHORT_NAME:-app}
+  TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-local-webhook-secret}
+  BRAND_NAME: ${BRAND_NAME:-WishTrack}
+  BRAND_EMOJI: ${BRAND_EMOJI:-🎁}
+  BRAND_PRIMARY: ${BRAND_PRIMARY:-#2764ff}
+  BRAND_ACCENT: ${BRAND_ACCENT:-#ff7c66}
+  NOTIFICATION_DIGEST_WINDOW: ${NOTIFICATION_DIGEST_WINDOW:-5m}
+
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    image: wishtrack:local
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+      APP_MODE: api
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - wishtrack_data:/app/data
+      - wishtrack_media:/app/media
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 8
+      start_period: 5s
+
+  worker:
+    image: wishtrack:local
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      <<: *app-environment
+      APP_MODE: worker
+    volumes:
+      - wishtrack_data:/app/data
+      - wishtrack_media:/app/media
+
+volumes:
+  wishtrack_data:
+  wishtrack_media:

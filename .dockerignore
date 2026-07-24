@@ -1,0 +1,14 @@
+.git
+.idea
+.env
+data
+media
+bin
+coverage
+web/node_modules
+web/dist
+web/playwright-report
+web/test-results
+*.db
+*.db-shm
+*.db-wal

@@ -1,0 +1,16 @@
+.env
+.deploy/
+.idea/
+.DS_Store
+*.log
+*.db
+*.db-shm
+*.db-wal
+data/
+media/
+bin/
+coverage/
+web/node_modules/
+web/dist/
+web/playwright-report/
+web/test-results/
