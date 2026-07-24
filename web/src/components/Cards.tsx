@@ -100,7 +100,11 @@ export function WishCard({
         <h3>{wish.title}</h3>
         <div className="wish-card__details">
           <strong>{formatPrice(wish.priceMinor, wish.currency)}</strong>
-          {wish.storeDomain && <span>{wish.storeDomain}</span>}
+          {wish.storeDomain && (
+            wish.productUrl
+              ? <a href={wish.productUrl} target="_blank" rel="noreferrer">{wish.storeDomain}</a>
+              : <span>{wish.storeDomain}</span>
+          )}
         </div>
         {wish.description && (
           <div className="wish-card__comment">

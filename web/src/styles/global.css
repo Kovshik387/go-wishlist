@@ -538,10 +538,18 @@ summary:focus-visible {
   font-size: 0.96rem;
 }
 
-.wish-card__details span {
+.wish-card__details span,
+.wish-card__details a {
   overflow: hidden;
+  color: var(--muted);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.wish-card__details a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
 }
 
 .wish-card__comment {

@@ -8,7 +8,7 @@ import { WishCard } from "./Cards";
 const wish: Wish = {
   id: "wish-1",
   wishlistId: "list-1",
-  productUrl: "",
+  productUrl: "https://www.ozon.ru/product/123",
   title: "Настольная игра",
   description: "Лучше русское издание: https://example.com/game.",
   imageUrl: "",
@@ -16,7 +16,7 @@ const wish: Wish = {
   priority: "normal",
   quantity: 1,
   attributes: {},
-  storeDomain: "",
+  storeDomain: "www.ozon.ru",
   version: 1,
   isReserved: false,
   reservedByMe: false,
@@ -44,5 +44,9 @@ describe("WishCard", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Скрыть комментарий" }));
     expect(screen.queryByText(/Лучше русское издание/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "www.ozon.ru" })).toHaveAttribute(
+      "href",
+      "https://www.ozon.ru/product/123",
+    );
   });
 });
