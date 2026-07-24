@@ -10,7 +10,7 @@ const wish: Wish = {
   wishlistId: "list-1",
   productUrl: "",
   title: "Настольная игра",
-  description: "Лучше русское издание, если оно есть.",
+  description: "Лучше русское издание: https://example.com/game.",
   imageUrl: "",
   currency: "RUB",
   priority: "normal",
@@ -35,10 +35,14 @@ describe("WishCard", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.queryByText(wish.description)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Лучше русское издание/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Показать комментарий" }));
-    expect(screen.getByText(wish.description)).toBeInTheDocument();
+    expect(screen.getByText(/Лучше русское издание/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "https://example.com/game" })).toHaveAttribute(
+      "href",
+      "https://example.com/game",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Скрыть комментарий" }));
-    expect(screen.queryByText(wish.description)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Лучше русское издание/)).not.toBeInTheDocument();
   });
 });

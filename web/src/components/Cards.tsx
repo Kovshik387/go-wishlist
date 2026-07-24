@@ -113,7 +113,11 @@ export function WishCard({
             >
               {commentOpen ? "Скрыть комментарий" : "Показать комментарий"}
             </button>
-            {commentOpen && <p className="wish-card__description" id={commentID}>{wish.description}</p>}
+            {commentOpen && (
+              <p className="wish-card__description" id={commentID}>
+                <LinkedText text={wish.description} />
+              </p>
+            )}
           </div>
         )}
         <div className="wish-card__actions">
@@ -179,4 +183,19 @@ function pluralWishes(count: number) {
   const mod100 = count % 100;
   const noun = mod10 === 1 && mod100 !== 11 ? "желание" : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? "желания" : "желаний";
   return `${count} ${noun}`;
+}
+
+function LinkedText({ text }: { text: string }) {
+  return text.split(/((?:https?:\/\/|www\.)[^\s]+)/gi).map((part, index) => {
+    if (!/^(?:https?:\/\/|www\.)/i.test(part)) return part;
+    const trailing = part.match(/[.,!?;:]+$/)?.[0] ?? "";
+    const visibleURL = trailing ? part.slice(0, -trailing.length) : part;
+    const href = /^https?:\/\//i.test(visibleURL) ? visibleURL : `https://${visibleURL}`;
+    return (
+      <span key={`${visibleURL}-${index}`}>
+        <a href={href} target="_blank" rel="noreferrer">{visibleURL}</a>
+        {trailing}
+      </span>
+    );
+  });
 }
