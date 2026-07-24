@@ -609,6 +609,8 @@ summary:focus-visible {
 .wishlist-card {
   position: relative;
   display: grid;
+  overflow: hidden;
+  isolation: isolate;
   min-height: 148px;
   padding: 14px 48px 14px 14px;
   border: 1px solid var(--border);
@@ -618,6 +620,30 @@ summary:focus-visible {
   grid-template-columns: 108px minmax(0, 1fr);
   gap: 18px;
   transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.wishlist-card__background {
+  position: absolute;
+  z-index: -2;
+  overflow: hidden;
+  inset: 0;
+}
+
+.wishlist-card__background img {
+  width: 100%;
+  height: 100%;
+  opacity: 0.42;
+  filter: blur(18px) saturate(0.85);
+  object-fit: cover;
+  transform: scale(1.18);
+}
+
+.wishlist-card__background::after {
+  position: absolute;
+  z-index: 1;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.88));
+  content: "";
+  inset: 0;
 }
 
 .wishlist-card:hover {
@@ -631,15 +657,10 @@ summary:focus-visible {
   min-height: 118px;
   overflow: hidden;
   border-radius: 11px;
-  background: var(--surface-soft);
+  background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+  backdrop-filter: blur(5px);
   color: var(--primary);
   place-items: center;
-}
-
-.wishlist-card__cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .wishlist-card__body {

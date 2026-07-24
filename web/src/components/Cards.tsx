@@ -15,8 +15,13 @@ const visibilityLabels = {
 export function WishlistCard({ list }: { list: Wishlist }) {
   return (
     <Link to={`/lists/${list.id}`} className="wishlist-card">
+      {list.coverUrl && (
+        <span className="wishlist-card__background" aria-hidden="true">
+          <img src={list.coverUrl} alt="" loading="lazy" referrerPolicy="no-referrer" />
+        </span>
+      )}
       <div className="wishlist-card__cover">
-        {list.coverUrl ? <img src={list.coverUrl} alt="" referrerPolicy="no-referrer" /> : <Icon name="lists" size={32} />}
+        <Icon name="lists" size={32} />
       </div>
       <div className="wishlist-card__body">
         <div className="wishlist-card__topline">
