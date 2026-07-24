@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 )
 
 type telegramUpdate struct {
-	UpdateID     int64 `json:"update_id"`
+	UpdateID     int64            `json:"update_id"`
 	Message      *telegramMessage `json:"message"`
 	MyChatMember *struct {
 		From          telegramSender `json:"from"`
@@ -81,14 +82,23 @@ func (s *Server) handleBotCommand(ctx context.Context, message telegramMessage) 
 		return
 	}
 	_ = s.Store.SetBotWriteAllowed(ctx, message.From.ID, true)
-	command := strings.ToLower(strings.Fields(message.Text)[0])
+	fields := strings.Fields(message.Text)
+	command := strings.ToLower(fields[0])
 	if at := strings.Index(command, "@"); at >= 0 {
 		command = command[:at]
 	}
 	text := "WishTrack помогает собирать желания и делиться ими с друзьями."
+	buttonText := "Открыть WishTrack"
+	buttonURL := s.Config.PublicURL
 	switch command {
 	case "/start":
-		text = "Привет, " + user.DisplayName + "! ✨\n\nСоберите желания в одном месте, поделитесь списком и сохраните сюрприз."
+		if len(fields) > 1 && validWishlistStartParam(fields[1]) {
+			text = "Вам отправили список желаний. Откройте его кнопкой ниже."
+			buttonText = "Открыть список"
+			buttonURL = webAppURL(s.Config.PublicURL, fields[1])
+		} else {
+			text = "Привет, " + user.DisplayName + "! ✨\n\nСоберите желания в одном месте, поделитесь списком и сохраните сюрприз."
+		}
 	case "/app":
 		text = "Откройте WishTrack — ваши списки уже ждут."
 	case "/notifications":
@@ -100,9 +110,9 @@ func (s *Server) handleBotCommand(ctx context.Context, message telegramMessage) 
 	}
 	request := bot.SendMessageRequest{
 		ChatID: message.Chat.ID,
-		Text: text,
+		Text:   text,
 		ReplyMarkup: bot.InlineKeyboardMarkup{InlineKeyboard: [][]bot.InlineKeyboardButton{{
-			{Text: "Открыть WishTrack", WebApp: &bot.WebAppInfo{URL: s.Config.PublicURL}},
+			{Text: buttonText, WebApp: &bot.WebAppInfo{URL: buttonURL}},
 		}}},
 	}
 	sendCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
@@ -110,4 +120,34 @@ func (s *Server) handleBotCommand(ctx context.Context, message telegramMessage) 
 	if err := s.Bot.SendMessage(sendCtx, request); err != nil {
 		s.Logger.Warn("send bot command response", "error", err, "command", command)
 	}
+}
+
+func validWishlistStartParam(value string) bool {
+	if !strings.HasPrefix(value, "wishlist_") || len(value) > 64 {
+		return false
+	}
+	token := strings.TrimPrefix(value, "wishlist_")
+	if token == "" {
+		return false
+	}
+	for _, char := range token {
+		if (char < 'a' || char > 'z') &&
+			(char < 'A' || char > 'Z') &&
+			(char < '0' || char > '9') &&
+			char != '_' && char != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+func webAppURL(publicURL, startParam string) string {
+	parsed, err := url.Parse(publicURL)
+	if err != nil {
+		return publicURL
+	}
+	query := parsed.Query()
+	query.Set("tgWebAppStartParam", startParam)
+	parsed.RawQuery = query.Encode()
+	return parsed.String()
 }

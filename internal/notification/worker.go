@@ -21,8 +21,7 @@ type Worker struct {
 	Logger       *slog.Logger
 	DigestWindow time.Duration
 	PollInterval time.Duration
-	BotUsername  string
-	AppShortName string
+	PublicURL    string
 	Now          func() time.Time
 }
 
@@ -56,7 +55,7 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) Tick(ctx context.Context) error {
-	_, err := w.Store.PrepareOutbox(ctx, w.DigestWindow, w.BotUsername, w.AppShortName, 50)
+	_, err := w.Store.PrepareOutbox(ctx, w.DigestWindow, w.PublicURL, 50)
 	if err != nil {
 		return fmt.Errorf("prepare outbox: %w", err)
 	}
@@ -87,8 +86,8 @@ func (w *Worker) Tick(ctx context.Context) error {
 			continue
 		}
 		request := bot.SendMessageRequest{
-			ChatID: delivery.TelegramID,
-			Text: renderMessage(payload),
+			ChatID:    delivery.TelegramID,
+			Text:      renderMessage(payload),
 			ParseMode: "HTML",
 			ReplyMarkup: bot.InlineKeyboardMarkup{InlineKeyboard: [][]bot.InlineKeyboardButton{{
 				{Text: "Открыть желание", WebApp: &bot.WebAppInfo{URL: payload.DeepLink}},

@@ -49,13 +49,12 @@ func main() {
 	dataStore := store.New(db)
 	if cfg.Mode == "worker" {
 		worker := &notification.Worker{
-			Store: dataStore,
-			Bot: &bot.Client{Token: cfg.TelegramBotToken},
-			Logger: logger,
+			Store:        dataStore,
+			Bot:          &bot.Client{Token: cfg.TelegramBotToken},
+			Logger:       logger,
 			DigestWindow: cfg.NotificationDigest,
 			PollInterval: cfg.WorkerPollInterval,
-			BotUsername: cfg.TelegramBotUsername,
-			AppShortName: cfg.TelegramAppShortName,
+			PublicURL:    cfg.PublicURL,
 		}
 		if err := worker.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("worker stopped", "error", err)

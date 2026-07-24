@@ -7,8 +7,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
+	"net/url"
 	"strings"
 	"time"
 
@@ -30,7 +30,7 @@ type deliveryPayload struct {
 	DeepLink   string   `json:"deepLink"`
 }
 
-func (s *Store) PrepareOutbox(ctx context.Context, digestWindow time.Duration, botUsername, appShortName string, limit int) (int, error) {
+func (s *Store) PrepareOutbox(ctx context.Context, digestWindow time.Duration, publicURL string, limit int) (int, error) {
 	if limit < 1 {
 		limit = 20
 	}
@@ -74,7 +74,7 @@ func (s *Store) PrepareOutbox(ctx context.Context, digestWindow time.Duration, b
 			continue
 		}
 		seenAuthors[item.Payload.AuthorID] = true
-		count, err := s.prepareAuthorDigest(ctx, item, digestWindow, botUsername, appShortName)
+		count, err := s.prepareAuthorDigest(ctx, item, digestWindow, publicURL)
 		if err != nil {
 			return processed, err
 		}
@@ -87,7 +87,7 @@ func (s *Store) prepareAuthorDigest(ctx context.Context, first struct {
 	ID        string
 	Payload   outboxPayload
 	CreatedAt time.Time
-}, digestWindow time.Duration, botUsername, appShortName string) (int, error) {
+}, digestWindow time.Duration, publicURL string) (int, error) {
 	type groupedEvent struct {
 		ID      string
 		Payload outboxPayload
@@ -157,10 +157,10 @@ func (s *Store) prepareAuthorDigest(ctx context.Context, first struct {
 		eventIDs = append(eventIDs, item.ID)
 		wishIDs = append(wishIDs, item.Payload.WishID)
 	}
-	return len(group), s.createDigestDeliveries(ctx, first.Payload.AuthorID, eventIDs, wishIDs, botUsername, appShortName)
+	return len(group), s.createDigestDeliveries(ctx, first.Payload.AuthorID, eventIDs, wishIDs, publicURL)
 }
 
-func (s *Store) createDigestDeliveries(ctx context.Context, authorID string, eventIDs, wishIDs []string, botUsername, appShortName string) error {
+func (s *Store) createDigestDeliveries(ctx context.Context, authorID string, eventIDs, wishIDs []string, publicURL string) error {
 	return withTx(ctx, s.DB, func(tx *sql.Tx) error {
 		var authorName string
 		if err := tx.QueryRowContext(ctx,
@@ -185,8 +185,8 @@ func (s *Store) createDigestDeliveries(ctx context.Context, authorID string, eve
 				price = &value
 			}
 		}
-		deepLink := fmt.Sprintf("https://t.me/%s/%s?startapp=wishlist_%s",
-			botUsername, appShortName, publicToken)
+		deepLink := strings.TrimRight(publicURL, "/") +
+			"/?tgWebAppStartParam=" + url.QueryEscape("wishlist_"+publicToken)
 		payload, _ := json.Marshal(deliveryPayload{
 			AuthorName: authorName, WishTitles: titles, WishCount: len(titles),
 			PriceMinor: price, Currency: currency, DeepLink: deepLink,

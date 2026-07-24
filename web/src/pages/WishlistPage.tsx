@@ -114,7 +114,7 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
 
 function shareList(list: Wishlist, config?: BrandConfig) {
   if (!list.publicToken || !config) return;
-  const url = `https://t.me/${config.botUsername}/${config.appShortName}?startapp=wishlist_${list.publicToken}`;
+  const url = `https://t.me/${config.botUsername}?start=wishlist_${list.publicToken}`;
   shareTelegram(url, `Загляни в мой список «${list.title}»`);
 }
 
