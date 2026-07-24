@@ -39,6 +39,7 @@ services:
 
   worker:
     image: wishtrack:local
+    pull_policy: never
     restart: unless-stopped
     depends_on:
       app:

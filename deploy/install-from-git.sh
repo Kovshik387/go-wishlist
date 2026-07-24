@@ -195,8 +195,10 @@ upsert_env_value() {
 start_services() {
   cd "${APP_DIR}"
   docker compose "${COMPOSE_FILES[@]}" config >/dev/null
-  log "Building and starting app, worker and Caddy (Marzban keeps port 443)"
-  docker compose "${COMPOSE_FILES[@]}" up --build -d --remove-orphans
+  log "Building the shared app image"
+  docker compose "${COMPOSE_FILES[@]}" build app
+  log "Starting app, worker and Caddy (Marzban keeps port 443)"
+  docker compose "${COMPOSE_FILES[@]}" up --no-build -d --remove-orphans
 
   local ready=0
   for _ in $(seq 1 60); do
