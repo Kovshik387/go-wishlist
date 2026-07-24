@@ -57,8 +57,9 @@ func (f Fetcher) Fetch(ctx context.Context, rawURL, referer string) (Asset, erro
 	if err != nil {
 		return Asset{}, err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; WishTrack/1.0)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1")
 	req.Header.Set("Accept", "image/avif,image/webp,image/png,image/jpeg,image/gif;q=0.8,*/*;q=0.2")
+	req.Header.Set("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.7")
 	if strings.HasPrefix(referer, "http://") || strings.HasPrefix(referer, "https://") {
 		req.Header.Set("Referer", referer)
 	}
@@ -80,14 +81,14 @@ func (f Fetcher) Fetch(ctx context.Context, rawURL, referer string) (Asset, erro
 	if int64(len(body)) > maxBytes {
 		return Asset{}, errors.New("image is too large")
 	}
-	mimeType, extension := detectImage(body)
+	mimeType, extension := DetectImage(body)
 	if mimeType == "" {
 		return Asset{}, errors.New("remote file is not a supported image")
 	}
 	return Asset{Body: body, MimeType: mimeType, Extension: extension}, nil
 }
 
-func detectImage(body []byte) (string, string) {
+func DetectImage(body []byte) (string, string) {
 	switch {
 	case len(body) >= 3 && bytes.Equal(body[:3], []byte{0xff, 0xd8, 0xff}):
 		return "image/jpeg", ".jpg"

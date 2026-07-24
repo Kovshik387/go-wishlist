@@ -14,6 +14,7 @@ import (
 
 	_ "image/gif"
 
+	"github.com/example/wishtrack/internal/imagecache"
 	"github.com/example/wishtrack/internal/platform"
 )
 
@@ -33,31 +34,31 @@ func (s *Server) uploadMedia(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusRequestEntityTooLarge, "FILE_TOO_LARGE", "Изображение должно быть не больше 6 МБ")
 		return
 	}
-	contentType := http.DetectContentType(body)
-	if contentType != "image/jpeg" && contentType != "image/png" {
-		writeError(w, http.StatusUnsupportedMediaType, "UNSUPPORTED_IMAGE", "Поддерживаются JPEG и PNG")
-		return
-	}
-	cfg, _, err := image.DecodeConfig(bytes.NewReader(body))
-	if err != nil || cfg.Width < 1 || cfg.Height < 1 || int64(cfg.Width)*int64(cfg.Height) > 24_000_000 {
-		writeError(w, http.StatusUnprocessableEntity, "INVALID_IMAGE", "Не удалось обработать изображение")
-		return
-	}
-	decoded, _, err := image.Decode(bytes.NewReader(body))
-	if err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "INVALID_IMAGE", "Не удалось обработать изображение")
+	contentType, extension := imagecache.DetectImage(body)
+	if contentType == "" {
+		writeError(w, http.StatusUnsupportedMediaType, "UNSUPPORTED_IMAGE", "Поддерживаются JPEG, PNG, WebP, GIF и AVIF")
 		return
 	}
 
-	extension := ".jpg"
-	outputType := "image/jpeg"
 	var output bytes.Buffer
-	if contentType == "image/png" {
-		extension = ".png"
-		outputType = "image/png"
-		err = png.Encode(&output, decoded)
+	if contentType == "image/jpeg" || contentType == "image/png" {
+		cfg, _, decodeErr := image.DecodeConfig(bytes.NewReader(body))
+		if decodeErr != nil || cfg.Width < 1 || cfg.Height < 1 || int64(cfg.Width)*int64(cfg.Height) > 24_000_000 {
+			writeError(w, http.StatusUnprocessableEntity, "INVALID_IMAGE", "Не удалось обработать изображение")
+			return
+		}
+		decoded, _, decodeErr := image.Decode(bytes.NewReader(body))
+		if decodeErr != nil {
+			writeError(w, http.StatusUnprocessableEntity, "INVALID_IMAGE", "Не удалось обработать изображение")
+			return
+		}
+		if contentType == "image/png" {
+			err = png.Encode(&output, decoded)
+		} else {
+			err = jpeg.Encode(&output, decoded, &jpeg.Options{Quality: 88})
+		}
 	} else {
-		err = jpeg.Encode(&output, decoded, &jpeg.Options{Quality: 88})
+		_, err = output.Write(body)
 	}
 	if err != nil {
 		writeStoreError(w, err)
@@ -89,7 +90,7 @@ func (s *Server) uploadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	publicURL := "/media/" + strings.ReplaceAll(filepath.ToSlash(relativePath), " ", "%20")
-	media, err := s.Store.CreateMedia(r.Context(), user.ID, relativePath, publicURL, outputType, int64(output.Len()))
+	media, err := s.Store.CreateMedia(r.Context(), user.ID, relativePath, publicURL, contentType, int64(output.Len()))
 	if err != nil {
 		_ = os.Remove(target)
 		writeStoreError(w, err)

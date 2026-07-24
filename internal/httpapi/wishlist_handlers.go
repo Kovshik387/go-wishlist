@@ -14,7 +14,12 @@ func (s *Server) listWishlists(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": lists})
+	saved, err := s.Store.ListSavedWishlists(r.Context(), user.ID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": lists, "saved": saved})
 }
 
 func (s *Server) createWishlist(w http.ResponseWriter, r *http.Request) {

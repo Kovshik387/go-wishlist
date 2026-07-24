@@ -210,8 +210,8 @@ summary:focus-visible {
   bottom: max(8px, env(safe-area-inset-bottom));
   left: 18px;
   display: grid;
-  grid-template-columns: repeat(2, 1fr) 62px repeat(2, 1fr);
-  align-items: end;
+  grid-template-columns: repeat(2, 1fr) 56px repeat(2, 1fr);
+  align-items: center;
   width: min(700px, calc(100% - 36px));
   height: var(--nav-height);
   margin: auto;
@@ -249,14 +249,14 @@ summary:focus-visible {
 
 .bottom-nav__add {
   display: grid;
-  width: 58px;
-  height: 58px;
-  align-self: start;
-  margin-top: -22px;
-  border: 5px solid var(--bg);
-  border-radius: 13px;
+  width: 50px;
+  height: 50px;
+  align-self: center;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 14px;
   background: var(--primary);
-  box-shadow: var(--shadow-button);
+  box-shadow: 0 5px 13px rgba(0, 102, 255, 0.22);
   color: #fff;
   cursor: pointer;
   place-items: center;
@@ -265,7 +265,7 @@ summary:focus-visible {
 
 .bottom-nav__add:hover {
   background: var(--primary-strong);
-  transform: translateY(-2px);
+  transform: scale(1.03);
 }
 
 .button {
@@ -572,6 +572,10 @@ summary:focus-visible {
 .wishlist-list {
   display: grid;
   gap: 15px;
+}
+
+.saved-lists {
+  margin-top: 32px;
 }
 
 .wishlist-card {

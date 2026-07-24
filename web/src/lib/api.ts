@@ -115,7 +115,7 @@ export const api = {
     request<User>("/api/v1/me", json("PATCH", body)),
   deleteMe: () => request<void>("/api/v1/me", json("DELETE")),
   feed: () => request<{ items: Wish[] }>("/api/v1/feed"),
-  wishlists: () => request<{ items: Wishlist[] }>("/api/v1/wishlists"),
+  wishlists: () => request<{ items: Wishlist[]; saved: Wishlist[] }>("/api/v1/wishlists"),
   wishlist: (id: string) => request<Wishlist>(`/api/v1/wishlists/${id}`),
   publicWishlist: (token: string) =>
     request<Wishlist>(`/api/v1/public/wishlists/${encodeURIComponent(token)}`),

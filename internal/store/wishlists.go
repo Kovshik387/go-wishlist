@@ -21,6 +21,18 @@ func (s *Store) ListWishlists(ctx context.Context, ownerID string) ([]Wishlist, 
 	return scanWishlists(rows, ownerID)
 }
 
+func (s *Store) ListSavedWishlists(ctx context.Context, userID string) ([]Wishlist, error) {
+	rows, err := s.DB.QueryContext(ctx, wishlistSelect+`
+		JOIN wishlist_access wa ON wa.wishlist_id = w.id
+		WHERE wa.user_id = ? AND w.owner_id != ? AND w.deleted_at IS NULL
+		ORDER BY wa.granted_at DESC`, userID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanWishlists(rows, userID)
+}
+
 func (s *Store) CreateWishlist(ctx context.Context, ownerID string, input WishlistInput) (Wishlist, error) {
 	normalizeWishlistInput(&input)
 	if err := validateWishlistInput(input); err != nil {
@@ -86,7 +98,7 @@ func (s *Store) PublicWishlist(ctx context.Context, token, viewerID string) (Wis
 	if list.Visibility == "private" && list.OwnerID != viewerID {
 		return Wishlist{}, ErrNotFound
 	}
-	if viewerID != "" && list.OwnerID != viewerID && list.Visibility == "link" {
+	if viewerID != "" && list.OwnerID != viewerID {
 		_, err = s.DB.ExecContext(ctx, `
 			INSERT INTO wishlist_access(wishlist_id, user_id, granted_at)
 			VALUES (?, ?, ?)

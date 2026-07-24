@@ -22,7 +22,7 @@ export function Shell() {
           aria-label="Создать список"
           onClick={() => navigate("/lists/new")}
         >
-          <Icon name="plus" size={28} />
+          <Icon name="plus" size={24} />
         </button>
         {navigation.slice(2).map((item) => <NavItem {...item} key={item.to} />)}
       </nav>

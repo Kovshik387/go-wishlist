@@ -17,7 +17,7 @@ export function ListsPage() {
       />
       {query.isPending && <PageLoading />}
       {query.isError && <ErrorState message={query.error.message} retry={() => void query.refetch()} />}
-      {query.data?.items.length === 0 && (
+      {query.data && query.data.items.length === 0 && query.data.saved.length === 0 && (
         <EmptyState
           visual={<Icon name="lists" size={34} />}
           title="Пора загадать первое желание"
@@ -28,6 +28,16 @@ export function ListsPage() {
       <div className="wishlist-list">
         {query.data?.items.map((list) => <WishlistCard list={list} key={list.id} />)}
       </div>
+      {query.data && query.data.saved.length > 0 && (
+        <section className="saved-lists">
+          <div className="section-title">
+            <h2>Списки друзей</h2>
+          </div>
+          <div className="wishlist-list">
+            {query.data.saved.map((list) => <WishlistCard list={list} key={list.id} />)}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

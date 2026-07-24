@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth";
@@ -23,6 +24,11 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
     mutationFn: (ownerID: string) => api.follow(ownerID),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["feed"] }),
   });
+  useEffect(() => {
+    if (publicView && query.data && query.data.ownerId !== user.id) {
+      void queryClient.invalidateQueries({ queryKey: ["wishlists"] });
+    }
+  }, [publicView, query.data, queryClient, user.id]);
   if (query.isPending) return <div className="page"><PageLoading /></div>;
   if (query.isError) return <div className="page"><ErrorState message={query.error.message} retry={() => void query.refetch()} /></div>;
   const list = query.data;
@@ -32,6 +38,7 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
     <div className="page page--detail">
       <PageHeader
         back
+        backTo="/lists"
         title={list.title}
         eyebrow={owner ? "Ваш список" : `Список · ${list.owner?.displayName ?? "друга"}`}
         action={
@@ -41,7 +48,7 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
         }
       />
       <section className="list-hero">
-        {list.coverUrl && <img className="list-hero__cover" src={list.coverUrl} alt="" />}
+        {list.coverUrl && <img className="list-hero__cover" src={list.coverUrl} alt="" referrerPolicy="no-referrer" />}
         <div className="list-hero__content">
           <span className="list-hero__icon"><Icon name="lists" size={30} /></span>
           <div>

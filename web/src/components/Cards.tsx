@@ -15,7 +15,7 @@ export function WishlistCard({ list }: { list: Wishlist }) {
   return (
     <Link to={`/lists/${list.id}`} className="wishlist-card">
       <div className="wishlist-card__cover">
-        {list.coverUrl ? <img src={list.coverUrl} alt="" /> : <Icon name="lists" size={32} />}
+        {list.coverUrl ? <img src={list.coverUrl} alt="" referrerPolicy="no-referrer" /> : <Icon name="lists" size={32} />}
       </div>
       <div className="wishlist-card__body">
         <div className="wishlist-card__topline">
@@ -76,7 +76,7 @@ export function WishCard({
         aria-label={`Открыть ${wish.title}`}
       >
         {wish.imageUrl
-          ? <img src={wish.imageUrl} alt="" loading="lazy" />
+          ? <img src={wish.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" />
           : <div className="wish-card__placeholder"><Icon name="gift" size={32} /></div>}
         {wish.priority === "high" && <span className="wish-card__priority">Приоритет</span>}
         {wish.isReserved && !owner && <span className="wish-card__reserved">Уже занят</span>}
@@ -135,7 +135,7 @@ export function WishCard({
 export function Avatar({ name, src, size = "medium" }: { name: string; src?: string; size?: "small" | "medium" | "large" }) {
   return (
     <span className={`avatar avatar--${size}`}>
-      {src ? <img src={src} alt="" /> : name.slice(0, 1).toUpperCase()}
+      {src ? <img src={src} alt="" referrerPolicy="no-referrer" /> : name.slice(0, 1).toUpperCase()}
     </span>
   );
 }

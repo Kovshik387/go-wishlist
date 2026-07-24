@@ -139,17 +139,17 @@ export function WishFormPage() {
         )}
         <div className="image-uploader">
           <button type="button" aria-label="Загрузить фото" onClick={() => fileRef.current?.click()}>
-            {imagePreview ? <img src={imagePreview} alt="" /> : <span>＋<small>Загрузить фото</small></span>}
+            {imagePreview ? <img src={imagePreview} alt="" referrerPolicy="no-referrer" /> : <span>＋<small>Загрузить фото</small></span>}
           </button>
           <input
             ref={fileRef}
             hidden
             type="file"
-            accept="image/jpeg,image/png"
+            accept="image/*"
             onChange={(event) => event.target.files?.[0] && uploadMutation.mutate(event.target.files[0])}
           />
           <div className="image-uploader__controls">
-            <p>{uploadMutation.isPending ? "Обрабатываем фото…" : "JPEG или PNG, до 6 МБ"}</p>
+            <p>{uploadMutation.isPending ? "Обрабатываем фото…" : "JPEG, PNG, WebP, GIF или AVIF, до 6 МБ"}</p>
             <label className="field">
               <span>Или вставьте ссылку на фото</span>
               <input
