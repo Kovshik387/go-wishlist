@@ -771,6 +771,7 @@ summary:focus-visible {
 
 .owner-strip {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   margin-bottom: 17px;
   padding: 13px 14px;
@@ -790,6 +791,12 @@ summary:focus-visible {
 .owner-strip span {
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+.owner-strip__error {
+  width: 100%;
+  margin: 0;
+  flex-basis: 100%;
 }
 
 .detail-actions {
@@ -1374,6 +1381,19 @@ summary:focus-visible {
 .public-profile p {
   margin-bottom: 22px;
   color: var(--muted);
+}
+
+.friend-lists {
+  margin-top: 28px;
+}
+
+.friend-lists__empty {
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: var(--muted);
+  text-align: center;
 }
 
 .settings-panel {

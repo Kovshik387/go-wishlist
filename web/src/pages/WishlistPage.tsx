@@ -7,7 +7,7 @@ import { Icon } from "../components/Icon";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState, ErrorState, PageLoading } from "../components/States";
 import { api } from "../lib/api";
-import { shareTelegram } from "../lib/telegram";
+import { haptic, shareTelegram } from "../lib/telegram";
 import type { BrandConfig, Wishlist } from "../types";
 
 export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
@@ -19,10 +19,26 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
     queryKey: publicView ? ["public-wishlist", token] : ["wishlist", id],
     queryFn: () => publicView ? api.publicWishlist(token) : api.wishlist(id),
   });
+  const friendID = query.data?.ownerId ?? "";
+  const friendQuery = useQuery({
+    queryKey: ["user", friendID],
+    queryFn: () => api.user(friendID),
+    enabled: Boolean(friendID && friendID !== user.id),
+  });
   const configQuery = useQuery({ queryKey: ["config"], queryFn: api.config });
   const followMutation = useMutation({
-    mutationFn: (ownerID: string) => api.follow(ownerID),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["feed"] }),
+    mutationFn: async () => {
+      const nextFollowing = !friendQuery.data?.following;
+      if (nextFollowing) await api.follow(friendID);
+      else await api.unfollow(friendID);
+      return nextFollowing;
+    },
+    onSuccess: async (nextFollowing) => {
+      haptic("success");
+      queryClient.setQueryData(["user", friendID], (current: typeof friendQuery.data) =>
+        current ? { ...current, following: nextFollowing } : current);
+      await queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
   });
   useEffect(() => {
     if (publicView && query.data && query.data.ownerId !== user.id) {
@@ -67,12 +83,14 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
           <Avatar name={list.owner.displayName} src={list.owner.avatarUrl} />
           <div><strong>{list.owner.displayName}</strong><span>@{list.owner.username || "без username"}</span></div>
           <button
-            className="button button--soft button--small"
+            className={`button button--small ${friendQuery.data?.following ? "button--soft" : "button--primary"}`}
             disabled={followMutation.isPending}
-            onClick={() => followMutation.mutate(list.ownerId)}
+            onClick={() => followMutation.mutate()}
           >
-            <Icon name="heart" size={17} /> Подписаться
+            <Icon name={friendQuery.data?.following ? "check" : "heart"} size={17} />
+            {followMutation.isPending ? "Секунду…" : friendQuery.data?.following ? "Вы подписаны" : "Подписаться"}
           </button>
+          {followMutation.isError && <p className="form-error owner-strip__error" role="alert">{followMutation.error.message}</p>}
         </section>
       )}
       <div className="detail-actions">

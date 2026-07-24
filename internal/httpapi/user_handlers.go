@@ -47,5 +47,10 @@ func (s *Server) publicUser(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"user": user, "following": following})
+	lists, err := s.Store.ListVisibleWishlistsByOwner(r.Context(), user.ID, viewer.ID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"user": user, "following": following, "wishlists": lists})
 }

@@ -142,7 +142,7 @@ export const api = {
   unfollow: (userID: string) =>
     request<void>(`/api/v1/users/${userID}/follow`, json("DELETE")),
   user: (id: string) =>
-    request<{ user: User; following: boolean }>(`/api/v1/users/${id}`),
+    request<{ user: User; following: boolean; wishlists: Wishlist[] }>(`/api/v1/users/${id}`),
   mute: (userID: string, muted: boolean) =>
     request<void>(`/api/v1/users/${userID}/notification-settings`, json("PATCH", { muted })),
   reserve: (wishID: string) =>
