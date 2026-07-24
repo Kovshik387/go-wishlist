@@ -206,13 +206,13 @@ summary:focus-visible {
 .bottom-nav {
   position: fixed;
   z-index: 60;
-  right: 10px;
+  right: 18px;
   bottom: max(8px, env(safe-area-inset-bottom));
-  left: 10px;
+  left: 18px;
   display: grid;
   grid-template-columns: repeat(2, 1fr) 62px repeat(2, 1fr);
   align-items: end;
-  width: min(700px, calc(100% - 20px));
+  width: min(700px, calc(100% - 36px));
   height: var(--nav-height);
   margin: auto;
   padding: 8px 8px 7px;
