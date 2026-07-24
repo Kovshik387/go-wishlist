@@ -1,0 +1,37 @@
+services:
+  app:
+    ports: !reset []
+    environment:
+      APP_ENV: production
+    networks: [private]
+
+  worker:
+    environment:
+      APP_ENV: production
+    networks: [private]
+
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+      PUBLIC_PORT: ${PUBLIC_PORT:-8443}
+    ports:
+      - "80:80"
+      - "${PUBLIC_PORT:-8443}:${PUBLIC_PORT:-8443}"
+      - "${PUBLIC_PORT:-8443}:${PUBLIC_PORT:-8443}/udp"
+    volumes:
+      - ./deploy/Caddyfile.marzban:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [private]
+
+networks:
+  private:
+
+volumes:
+  caddy_data:
+  caddy_config:

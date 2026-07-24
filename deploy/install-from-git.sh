@@ -15,6 +15,9 @@ APP_DIR="${APP_DIR:-/opt/wishtrack}"
 DOMAIN="${DOMAIN:-wish.exchangevolute.ru}"
 EXPECTED_IP="${EXPECTED_IP:-144.31.52.140}"
 APP_SHORT_NAME="${APP_SHORT_NAME:-app}"
+PUBLIC_PORT="${PUBLIC_PORT:-8443}"
+PUBLIC_URL="https://${DOMAIN}:${PUBLIC_PORT}"
+COMPOSE_FILES=(-f compose.yaml -f compose.marzban.yaml)
 
 log() {
   printf '\n[wishtrack] %s\n' "$*"
@@ -81,7 +84,7 @@ check_ports() {
   if ! command -v ss >/dev/null 2>&1; then
     return
   fi
-  for port in 80 443; do
+  for port in 80 "${PUBLIC_PORT}"; do
     if ss -H -ltn "sport = :${port}" | grep -q .; then
       if ! docker ps --format '{{.Names}}' | grep -q '^wishtrack-caddy-1$'; then
         ss -ltnp "sport = :${port}" || true
@@ -94,7 +97,8 @@ check_ports() {
 configure_firewall() {
   if command -v ufw >/dev/null 2>&1 && ufw status | grep -q '^Status: active'; then
     ufw allow 80/tcp
-    ufw allow 443/tcp
+    ufw allow "${PUBLIC_PORT}/tcp"
+    ufw allow "${PUBLIC_PORT}/udp"
   fi
 }
 
@@ -128,8 +132,13 @@ read_secret_from_tty() {
 create_environment() {
   local env_file="${APP_DIR}/.env"
   if [[ -s "${env_file}" ]]; then
+    upsert_env_value "${env_file}" "APP_ENV" "production"
+    upsert_env_value "${env_file}" "PUBLIC_URL" "${PUBLIC_URL}"
+    upsert_env_value "${env_file}" "FRONTEND_ORIGIN" "${PUBLIC_URL}"
+    upsert_env_value "${env_file}" "DOMAIN" "${DOMAIN}"
+    upsert_env_value "${env_file}" "PUBLIC_PORT" "${PUBLIC_PORT}"
     chmod 0600 "${env_file}"
-    log "Keeping existing production secrets from ${env_file}"
+    log "Keeping existing production secrets and updating the public URL"
     return
   fi
 
@@ -152,9 +161,10 @@ create_environment() {
   umask 077
   cat > "${env_file}" <<EOF
 APP_ENV=production
-PUBLIC_URL=https://${DOMAIN}
-FRONTEND_ORIGIN=https://${DOMAIN}
+PUBLIC_URL=${PUBLIC_URL}
+FRONTEND_ORIGIN=${PUBLIC_URL}
 DOMAIN=${DOMAIN}
+PUBLIC_PORT=${PUBLIC_PORT}
 ACCESS_TOKEN_SECRET=${access_secret}
 TELEGRAM_BOT_TOKEN=${bot_token}
 TELEGRAM_BOT_USERNAME=${bot_username}
@@ -171,15 +181,26 @@ EOF
   log "Production secrets created"
 }
 
+upsert_env_value() {
+  local env_file="$1"
+  local key="$2"
+  local value="$3"
+  if grep -q "^${key}=" "${env_file}"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "${env_file}"
+  else
+    printf '%s=%s\n' "${key}" "${value}" >> "${env_file}"
+  fi
+}
+
 start_services() {
   cd "${APP_DIR}"
-  docker compose -f compose.yaml -f compose.prod.yaml config >/dev/null
-  log "Building and starting app, worker and Caddy"
-  docker compose -f compose.yaml -f compose.prod.yaml up --build -d --remove-orphans
+  docker compose "${COMPOSE_FILES[@]}" config >/dev/null
+  log "Building and starting app, worker and Caddy (Marzban keeps port 443)"
+  docker compose "${COMPOSE_FILES[@]}" up --build -d --remove-orphans
 
   local ready=0
   for _ in $(seq 1 60); do
-    if docker compose -f compose.yaml -f compose.prod.yaml exec -T app \
+    if docker compose "${COMPOSE_FILES[@]}" exec -T app \
       wget -qO- http://127.0.0.1:8080/readyz >/dev/null 2>&1; then
       ready=1
       break
@@ -187,7 +208,7 @@ start_services() {
     sleep 5
   done
   if [[ "${ready}" -ne 1 ]]; then
-    docker compose -f compose.yaml -f compose.prod.yaml logs --tail=120 app worker caddy
+    docker compose "${COMPOSE_FILES[@]}" logs --tail=120 app worker caddy
     fail "WishTrack did not become ready"
   fi
 }
@@ -195,13 +216,16 @@ start_services() {
 wait_for_https() {
   log "Waiting for Caddy to issue the HTTPS certificate"
   for _ in $(seq 1 60); do
-    if curl -fsS "https://${DOMAIN}/readyz" | grep -q '"status":"ready"'; then
+    if curl -fsS "${PUBLIC_URL}/readyz" | grep -q '"status":"ready"'; then
       return
     fi
     sleep 5
   done
-  docker compose -f "${APP_DIR}/compose.yaml" -f "${APP_DIR}/compose.prod.yaml" logs --tail=120 caddy
-  fail "HTTPS is not ready; verify DNS and inbound ports 80/443"
+  (
+    cd "${APP_DIR}"
+    docker compose "${COMPOSE_FILES[@]}" logs --tail=120 caddy
+  )
+  fail "HTTPS is not ready; verify DNS and inbound ports 80/${PUBLIC_PORT}"
 }
 
 configure_telegram() {
@@ -213,17 +237,17 @@ configure_telegram() {
 
   log "Configuring Telegram webhook and menu button"
   curl -fsS -X POST "https://api.telegram.org/bot${bot_token}/setWebhook" \
-    --data-urlencode "url=https://${DOMAIN}/api/v1/telegram/webhook" \
+    --data-urlencode "url=${PUBLIC_URL}/api/v1/telegram/webhook" \
     --data-urlencode "secret_token=${webhook_secret}" \
     --data-urlencode 'allowed_updates=["message","my_chat_member"]' \
     --data-urlencode 'drop_pending_updates=false' \
     | jq -e '.ok == true' >/dev/null
 
   curl -fsS -X POST "https://api.telegram.org/bot${bot_token}/setChatMenuButton" \
-    --data-urlencode "menu_button={\"type\":\"web_app\",\"text\":\"Открыть WishTrack\",\"web_app\":{\"url\":\"https://${DOMAIN}\"}}" \
+    --data-urlencode "menu_button={\"type\":\"web_app\",\"text\":\"Открыть WishTrack\",\"web_app\":{\"url\":\"${PUBLIC_URL}\"}}" \
     | jq -e '.ok == true' >/dev/null
 
-  printf '\nWishTrack: https://%s\nBot: https://t.me/%s\n' "${DOMAIN}" "${bot_username}"
+  printf '\nWishTrack: %s\nBot: https://t.me/%s\n' "${PUBLIC_URL}" "${bot_username}"
 }
 
 install_base_packages
@@ -238,4 +262,7 @@ wait_for_https
 configure_telegram
 
 log "Deployment completed"
-docker compose -f "${APP_DIR}/compose.yaml" -f "${APP_DIR}/compose.prod.yaml" ps
+(
+  cd "${APP_DIR}"
+  docker compose "${COMPOSE_FILES[@]}" ps
+)

@@ -1,0 +1,18 @@
+http://{$DOMAIN} {
+	redir https://{$DOMAIN}:{$PUBLIC_PORT}{uri} permanent
+}
+
+https://{$DOMAIN}:{$PUBLIC_PORT} {
+	encode zstd gzip
+	reverse_proxy app:8080
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
