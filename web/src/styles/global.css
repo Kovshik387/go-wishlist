@@ -540,15 +540,28 @@ summary:focus-visible {
   white-space: nowrap;
 }
 
-.wish-card__description {
-  display: -webkit-box;
+.wish-card__comment {
   margin-bottom: 12px;
-  overflow: hidden;
+}
+
+.wish-card__comment-toggle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.wish-card__description {
+  margin: 8px 0 0;
   color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.45;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .wish-card__actions {
@@ -1708,10 +1721,6 @@ summary:focus-visible {
 
   .wish-card__body {
     padding: 13px 11px;
-  }
-
-  .wish-card__description {
-    display: none;
   }
 
   .wish-card__actions .button {

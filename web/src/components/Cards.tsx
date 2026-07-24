@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { api, APIError } from "../lib/api";
@@ -49,6 +50,8 @@ export function WishCard({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [commentOpen, setCommentOpen] = useState(false);
+  const commentID = useId();
   const mutation = useMutation({
     mutationFn: async () => {
       if (wish.reservedByMe) {
@@ -94,7 +97,20 @@ export function WishCard({
           <strong>{formatPrice(wish.priceMinor, wish.currency)}</strong>
           {wish.storeDomain && <span>{wish.storeDomain}</span>}
         </div>
-        {wish.description && <p className="wish-card__description">{wish.description}</p>}
+        {wish.description && (
+          <div className="wish-card__comment">
+            <button
+              type="button"
+              className="wish-card__comment-toggle"
+              aria-expanded={commentOpen}
+              aria-controls={commentID}
+              onClick={() => setCommentOpen((open) => !open)}
+            >
+              {commentOpen ? "Скрыть комментарий" : "Показать комментарий"}
+            </button>
+            {commentOpen && <p className="wish-card__description" id={commentID}>{wish.description}</p>}
+          </div>
+        )}
         <div className="wish-card__actions">
           {owner ? (
             <button className="button button--soft button--small" onClick={() => navigate(target)}>
