@@ -434,13 +434,15 @@ summary:focus-visible {
 }
 
 .wish-card {
-  display: grid;
+  position: relative;
+  display: block;
+  min-height: 172px;
+  padding-left: 128px;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface-raised);
   box-shadow: var(--shadow-sm);
-  grid-template-columns: 128px minmax(0, 1fr);
   transition: box-shadow 180ms ease, transform 180ms ease;
 }
 
@@ -450,14 +452,15 @@ summary:focus-visible {
 }
 
 .wish-card__image {
-  position: relative;
+  position: absolute;
   display: block;
-  min-height: 172px;
+  width: 128px;
   padding: 0;
   overflow: hidden;
   border: 0;
   background: var(--accent-soft);
   cursor: pointer;
+  inset: 0 auto 0 0;
 }
 
 .wish-card__image img {
@@ -1674,11 +1677,17 @@ summary:focus-visible {
 
   .wish-card {
     display: flex;
+    min-height: 0;
+    padding-left: 0;
     flex-direction: column;
   }
 
   .wish-card__image {
+    position: relative;
+    width: 100%;
     height: 260px;
+    min-height: 260px;
+    inset: auto;
   }
 
   .wish-card__image img,
@@ -1761,7 +1770,11 @@ summary:focus-visible {
   }
 
   .wish-card {
-    grid-template-columns: 112px minmax(0, 1fr);
+    padding-left: 112px;
+  }
+
+  .wish-card__image {
+    width: 112px;
   }
 
   .wish-card__body {
