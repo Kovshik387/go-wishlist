@@ -25,6 +25,11 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
     queryFn: () => api.user(friendID),
     enabled: Boolean(friendID && friendID !== user.id),
   });
+  const listsQuery = useQuery({
+    queryKey: ["wishlists"],
+    queryFn: api.wishlists,
+    enabled: Boolean(friendID && friendID !== user.id),
+  });
   const configQuery = useQuery({ queryKey: ["config"], queryFn: api.config });
   const followMutation = useMutation({
     mutationFn: async () => {
@@ -40,6 +45,14 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
       await queryClient.invalidateQueries({ queryKey: ["feed"] });
     },
   });
+  const forgetMutation = useMutation({
+    mutationFn: () => api.forgetWishlist(query.data?.id ?? ""),
+    onSuccess: async () => {
+      haptic("success");
+      await queryClient.invalidateQueries({ queryKey: ["wishlists"] });
+      navigate("/lists", { replace: true });
+    },
+  });
   useEffect(() => {
     if (publicView && query.data && query.data.ownerId !== user.id) {
       void queryClient.invalidateQueries({ queryKey: ["wishlists"] });
@@ -49,6 +62,7 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
   if (query.isError) return <div className="page"><ErrorState message={query.error.message} retry={() => void query.refetch()} /></div>;
   const list = query.data;
   const owner = list.ownerId === user.id;
+  const saved = listsQuery.data?.saved.some((item) => item.id === list.id) ?? false;
   const share = () => shareList(list, configQuery.data);
   return (
     <div className="page page--detail">
@@ -104,8 +118,18 @@ export function WishlistPage({ publicView = false }: { publicView?: boolean }) {
             </Link>
           </>
         )}
-        {!owner && <button className="button button--primary" onClick={share}><Icon name="share" size={18} /> Переслать другу</button>}
+        {!owner && (
+          <>
+            <button className="button button--primary" onClick={share}><Icon name="share" size={18} /> Переслать другу</button>
+            {saved && (
+              <button className="button button--soft" disabled={forgetMutation.isPending} onClick={() => forgetMutation.mutate()}>
+                <Icon name="close" size={18} /> Убрать список
+              </button>
+            )}
+          </>
+        )}
       </div>
+      {forgetMutation.isError && <p className="form-error" role="alert">{forgetMutation.error.message}</p>}
       {list.wishes?.length === 0 && (
         <EmptyState
           visual={<Icon name={owner ? "plus" : "lists"} size={34} />}

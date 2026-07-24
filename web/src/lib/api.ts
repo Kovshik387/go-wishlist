@@ -125,6 +125,8 @@ export const api = {
     request<Wishlist>(`/api/v1/wishlists/${id}`, json("PATCH", body)),
   deleteWishlist: (id: string) =>
     request<void>(`/api/v1/wishlists/${id}`, json("DELETE")),
+  forgetWishlist: (id: string) =>
+    request<void>(`/api/v1/wishlists/${id}/subscription`, json("DELETE")),
   rotateLink: (id: string) =>
     request<Wishlist>(`/api/v1/wishlists/${id}/rotate-link`, json("POST")),
   wish: (listID: string, wishID: string) =>

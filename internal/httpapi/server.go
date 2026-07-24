@@ -78,6 +78,7 @@ func (s *Server) Handler() http.Handler {
 		api.Get("/api/v1/wishlists/{id}", s.getWishlist)
 		api.Patch("/api/v1/wishlists/{id}", s.updateWishlist)
 		api.Delete("/api/v1/wishlists/{id}", s.deleteWishlist)
+		api.Delete("/api/v1/wishlists/{id}/subscription", s.forgetWishlist)
 		api.Post("/api/v1/wishlists/{id}/rotate-link", s.rotateWishlistLink)
 		api.Post("/api/v1/wishlists/{id}/wishes", s.createWish)
 		api.Get("/api/v1/wishlists/{id}/wishes/{wishID}", s.getWish)

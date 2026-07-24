@@ -578,6 +578,21 @@ summary:focus-visible {
   margin-top: 32px;
 }
 
+.saved-list-item {
+  position: relative;
+}
+
+.saved-list-item__remove {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  box-shadow: none;
+}
+
 .wishlist-card {
   position: relative;
   display: grid;

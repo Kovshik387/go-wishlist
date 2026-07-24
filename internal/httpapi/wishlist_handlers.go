@@ -46,6 +46,15 @@ func (s *Server) getWishlist(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, list)
 }
 
+func (s *Server) forgetWishlist(w http.ResponseWriter, r *http.Request) {
+	user, _ := userFromContext(r.Context())
+	if err := s.Store.ForgetWishlist(r.Context(), chi.URLParam(r, "id"), user.ID); err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) updateWishlist(w http.ResponseWriter, r *http.Request) {
 	user, _ := userFromContext(r.Context())
 	var input store.WishlistInput

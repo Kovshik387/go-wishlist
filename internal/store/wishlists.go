@@ -33,6 +33,16 @@ func (s *Store) ListSavedWishlists(ctx context.Context, userID string) ([]Wishli
 	return scanWishlists(rows, userID)
 }
 
+func (s *Store) ForgetWishlist(ctx context.Context, wishlistID, userID string) error {
+	_, err := s.DB.ExecContext(ctx, `
+		DELETE FROM wishlist_access
+		WHERE wishlist_id = ? AND user_id = ?
+		  AND wishlist_id IN (
+		    SELECT id FROM wishlists WHERE owner_id != ?
+		  )`, wishlistID, userID, userID)
+	return err
+}
+
 func (s *Store) ListVisibleWishlistsByOwner(ctx context.Context, ownerID, viewerID string) ([]Wishlist, error) {
 	rows, err := s.DB.QueryContext(ctx, wishlistSelect+`
 		WHERE w.owner_id = ? AND w.deleted_at IS NULL
